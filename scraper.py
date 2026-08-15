@@ -3,10 +3,8 @@ import requests
 from bs4 import BeautifulSoup
 import os
 
-# Ordner für HTML-Seiten
 os.makedirs("teams", exist_ok=True)
 
-# Teams laden
 teams = json.load(open("teams.json", encoding="utf-8"))
 
 def scrape_table(team):
@@ -15,25 +13,87 @@ def scrape_table(team):
 
     print(f"Scrape: {name} – {url}")
 
-    # HTML laden
     html = requests.get(url).text
     soup = BeautifulSoup(html, "html.parser")
 
-    # Tabelle finden
     table = soup.select_one("#team-fixture-league-tables table")
     if not table:
         print(f"⚠️ Keine Tabelle gefunden für {name}")
         return
 
-    # ALLE Links entfernen (nur Text behalten)
-    for a in table.find_all("a"):
-        a.unwrap()
+    rows = []
+    for tr in table.select("tbody tr"):
+        tds = tr.find_all("td")
+        if len(tds) < 10:
+            continue
 
-    # ALLE Bilder entfernen
-    for img in table.find_all("img"):
-        img.decompose()
+        platz = tds[1].get_text(strip=True)
 
-    # HTML-Seite erzeugen
+        # Logo extrahieren
+        img = tds[2].find("img")
+        logo_url = img["src"] if img else ""
+
+        # Mannschaftsname extrahieren
+        club_name = tds[2].get_text(strip=True)
+
+        spiele = tds[3].get_text(strip=True)
+        g = tds[4].get_text(strip=True)
+        u = tds[5].get_text(strip=True)
+        v = tds[6].get_text(strip=True)
+        tore = tds[7].get_text(strip=True)
+        punkte = tds[9].get_text(strip=True)
+
+        rows.append({
+            "platz": platz,
+            "logo": logo_url,
+            "name": club_name,
+            "spiele": spiele,
+            "g": g,
+            "u": u,
+            "v": v,
+            "tore": tore,
+            "punkte": punkte
+        })
+
+    # Neue HTML-Tabelle ohne Tordifferenz
+    table_html = """
+<table>
+  <thead>
+    <tr>
+      <th>Platz</th>
+      <th>Logo</th>
+      <th>Mannschaft</th>
+      <th>Spiele</th>
+      <th>G</th>
+      <th>U</th>
+      <th>V</th>
+      <th>Tore</th>
+      <th>Punkte</th>
+    </tr>
+  </thead>
+  <tbody>
+"""
+
+    for r in rows:
+        table_html += f"""
+    <tr>
+      <td>{r['platz']}</td>
+      <td><img src="{r['logo']}" alt="" style="height:24px;"></td>
+      <td>{r['name']}</td>
+      <td>{r['spiele']}</td>
+      <td>{r['g']}</td>
+      <td>{r['u']}</td>
+      <td>{r['v']}</td>
+      <td>{r['tore']}</td>
+      <td>{r['punkte']}</td>
+    </tr>
+"""
+
+    table_html += """
+  </tbody>
+</table>
+"""
+
     html_out = f"""
 <!DOCTYPE html>
 <html lang="de">
@@ -45,16 +105,16 @@ def scrape_table(team):
   table {{ border-collapse: collapse; width: 100%; }}
   th, td {{ border: 1px solid #ccc; padding: 6px; }}
   th {{ background: #eee; }}
+  img {{ height: 24px; }}
 </style>
 </head>
 <body>
 <h1>Ligatabelle – {name}</h1>
-{str(table)}
+{table_html}
 </body>
 </html>
 """
 
-    # Datei speichern
     output_path = f"teams/{name}.html"
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_out)
@@ -62,6 +122,5 @@ def scrape_table(team):
     print(f"✔️ HTML erzeugt: {output_path}")
 
 
-# Alle Teams scrapen
 for team in teams:
     scrape_table(team)
