@@ -2,10 +2,19 @@ import json
 import requests
 from bs4 import BeautifulSoup
 import os
+import re
 
 os.makedirs("teams", exist_ok=True)
 
 teams = json.load(open("teams.json", encoding="utf-8"))
+
+def normalize(text):
+    """Entfernt Zero-Width-Chars, HTML-Entities, doppelte Leerzeichen."""
+    text = text.replace("\u200b", "")  # Zero-width space
+    text = text.replace("\u200c", "")
+    text = text.replace("\u200d", "")
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
 def scrape_table(team):
     name = team["name"]
@@ -27,9 +36,9 @@ def scrape_table(team):
         if len(tds) < 10:
             continue
 
-        platz = tds[1].get_text(strip=True)
+        platz = normalize(tds[1].get_text(strip=True))
 
-        # Logo mit https:// bauen
+        # Logo extrahieren
         img = tds[2].find("img")
         if img and img.get("src"):
             src = img["src"]
@@ -37,16 +46,18 @@ def scrape_table(team):
         else:
             logo_url = ""
 
-        club_name = tds[2].get_text(strip=True)
+        # Mannschaftsname extrahieren
+        club_name = normalize(tds[2].get_text(strip=True))
 
-        spiele = tds[3].get_text(strip=True)
-        g = tds[4].get_text(strip=True)
-        u = tds[5].get_text(strip=True)
-        v = tds[6].get_text(strip=True)
-        tore = tds[7].get_text(strip=True)
-        punkte = tds[9].get_text(strip=True)
-
+        # Highlighting robust machen
         highlight = "oftersheim" in club_name.lower()
+
+        spiele = normalize(tds[3].get_text(strip=True))
+        g = normalize(tds[4].get_text(strip=True))
+        u = normalize(tds[5].get_text(strip=True))
+        v = normalize(tds[6].get_text(strip=True))
+        tore = normalize(tds[7].get_text(strip=True))
+        punkte = normalize(tds[9].get_text(strip=True))
 
         rows.append({
             "platz": platz,
@@ -61,6 +72,7 @@ def scrape_table(team):
             "highlight": highlight
         })
 
+    # Neue HTML-Tabelle
     table_html = """
 <table>
   <thead>
@@ -81,6 +93,7 @@ def scrape_table(team):
 
     for r in rows:
         style = ' style="background-color: #fff3b0;"' if r["highlight"] else ""
+
         table_html += f"""
     <tr{style}>
       <td>{r['platz']}</td>
