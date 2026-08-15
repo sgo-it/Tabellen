@@ -1,22 +1,27 @@
 [
   {
     "name": "herren1",
+    "titel: "Herren 1 - Kreisliga 2026/2027",
     "url": "https://www.fussball.de/mannschaft/sg-oftersheim-sg-oftersheim-baden/-/saison/2627/team-id/011MIB33U4000000VTVG0001VTR8C1K7"
   },
   {
     "name": "herren2",
+    "titel: "Herren 2 - Kreisklasse A 2026/2027",
     "url": "https://www.fussball.de/mannschaft/sg-oftersheim-2-sg-oftersheim-baden/-/saison/2627/team-id/011MI9II84000000VTVG0001VTR8C1K7"
   },
   {
     "name": "herren3",
+    "titel: "Herren 3 - Kreisklasse B 2026/2027",
     "url": "https://www.fussball.de/mannschaft/sg-oftersheim-3-sg-oftersheim-baden/-/saison/2627/team-id/030VRNT360000000VS5489BRVV9R0K3A"
   },
   {
     "name": "frauen2",
+    "titel: "Frauen - Landesliga 2026/2027",
     "url": "https://www.fussball.de/mannschaft/spg-muehlhausen-2-oftersheim-1fc-muehlhausen-baden/-/saison/2627/team-id/03152OJMG8000000VS5489BRVVV10ESU"
   },
   {
     "name": "junioren-B",
+    "titel: "Junioren B - Landesliga 2026/2027",
     "url": "https://www.fussball.de/mannschaft/jsg-oftersheim-sv-rohrhof-sg-oftersheim-baden/-/saison/2627/team-id/01P08MHR5K000000VV0AG80NVT74RFIN"
   }
 ]
