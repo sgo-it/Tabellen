@@ -29,11 +29,14 @@ def scrape_table(team):
 
         platz = tds[1].get_text(strip=True)
 
-        # Logo extrahieren
+        # Logo mit https:// bauen
         img = tds[2].find("img")
-        logo_url = img["src"] if img else ""
+        if img and img.get("src"):
+            src = img["src"]
+            logo_url = "https:" + src if src.startswith("//") else src
+        else:
+            logo_url = ""
 
-        # Mannschaftsname extrahieren
         club_name = tds[2].get_text(strip=True)
 
         spiele = tds[3].get_text(strip=True)
@@ -42,6 +45,8 @@ def scrape_table(team):
         v = tds[6].get_text(strip=True)
         tore = tds[7].get_text(strip=True)
         punkte = tds[9].get_text(strip=True)
+
+        highlight = "oftersheim" in club_name.lower()
 
         rows.append({
             "platz": platz,
@@ -52,10 +57,10 @@ def scrape_table(team):
             "u": u,
             "v": v,
             "tore": tore,
-            "punkte": punkte
+            "punkte": punkte,
+            "highlight": highlight
         })
 
-    # Neue HTML-Tabelle ohne Tordifferenz
     table_html = """
 <table>
   <thead>
@@ -75,8 +80,9 @@ def scrape_table(team):
 """
 
     for r in rows:
+        style = ' style="background-color: #fff3b0;"' if r["highlight"] else ""
         table_html += f"""
-    <tr>
+    <tr{style}>
       <td>{r['platz']}</td>
       <td><img src="{r['logo']}" alt="" style="height:24px;"></td>
       <td>{r['name']}</td>
