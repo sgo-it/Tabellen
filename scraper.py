@@ -4,22 +4,27 @@ from bs4 import BeautifulSoup
 import os
 import re
 
+# Ordner anlegen
 os.makedirs("teams", exist_ok=True)
 os.makedirs("logos", exist_ok=True)
 
+# Teams laden
 teams = json.load(open("teams.json", encoding="utf-8"))
 
 def normalize(text):
+    """Entfernt Zero-Width-Chars, HTML-Entities, doppelte Leerzeichen."""
     text = text.replace("\u200b", "").replace("\u200c", "").replace("\u200d", "")
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 def slugify(name):
+    """Erzeugt Dateinamen für Logos."""
     name = name.lower()
     name = re.sub(r"[^a-z0-9]+", "-", name)
     return name.strip("-")
 
 def download_logo(url, filename):
+    """Logo lokal speichern."""
     try:
         r = requests.get(url, timeout=10)
         if r.status_code == 200:
@@ -33,9 +38,10 @@ def download_logo(url, filename):
 
 def scrape_table(team):
     name = team["name"]
+    titel = team.get("titel", name)
     url = team["url"]
 
-    print(f"Scrape: {name} – {url}")
+    print(f"Scrape: {titel} – {url}")
 
     html = requests.get(url).text
     soup = BeautifulSoup(html, "html.parser")
@@ -61,14 +67,18 @@ def scrape_table(team):
         else:
             logo_url = ""
 
+        # Mannschaftsname extrahieren
         club_name = normalize(tds[2].get_text(strip=True))
+
+        # Dateiname für lokales Logo
         slug = slugify(club_name)
         local_logo = f"logos/{slug}.png"
 
-        # Logo lokal speichern
+        # Logo lokal speichern (nur wenn nicht vorhanden)
         if logo_url and not os.path.exists(local_logo):
             download_logo(logo_url, local_logo)
 
+        # Highlighting für Oftersheim
         highlight = "oftersheim" in club_name.lower()
 
         spiele = normalize(tds[3].get_text(strip=True))
@@ -91,7 +101,7 @@ def scrape_table(team):
             "highlight": highlight
         })
 
-    # Neue HTML-Tabelle
+    # Neue HTML-Tabelle erzeugen
     table_html = """
 <table>
   <thead>
@@ -132,12 +142,13 @@ def scrape_table(team):
 </table>
 """
 
+    # HTML-Seite erzeugen
     html_out = f"""
 <!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Ligatabelle – {name}</title>
+<title>{titel}</title>
 <style>
   body {{ font-family: Arial; padding: 20px; }}
   table {{ border-collapse: collapse; width: 100%; }}
@@ -147,7 +158,7 @@ def scrape_table(team):
 </style>
 </head>
 <body>
-<h1>Ligatabelle – {name}</h1>
+<h1>{titel}</h1>
 {table_html}
 </body>
 </html>
@@ -160,5 +171,6 @@ def scrape_table(team):
     print(f"✔ HTML erzeugt: {output_path}")
 
 
+# Alle Teams scrapen
 for team in teams:
     scrape_table(team)
