@@ -5,16 +5,31 @@ import os
 import re
 
 os.makedirs("teams", exist_ok=True)
+os.makedirs("logos", exist_ok=True)
 
 teams = json.load(open("teams.json", encoding="utf-8"))
 
 def normalize(text):
-    """Entfernt Zero-Width-Chars, HTML-Entities, doppelte Leerzeichen."""
-    text = text.replace("\u200b", "")  # Zero-width space
-    text = text.replace("\u200c", "")
-    text = text.replace("\u200d", "")
+    text = text.replace("\u200b", "").replace("\u200c", "").replace("\u200d", "")
     text = re.sub(r"\s+", " ", text)
     return text.strip()
+
+def slugify(name):
+    name = name.lower()
+    name = re.sub(r"[^a-z0-9]+", "-", name)
+    return name.strip("-")
+
+def download_logo(url, filename):
+    try:
+        r = requests.get(url, timeout=10)
+        if r.status_code == 200:
+            with open(filename, "wb") as f:
+                f.write(r.content)
+            print(f"✔ Logo gespeichert: {filename}")
+        else:
+            print(f"⚠ Logo konnte nicht geladen werden: {url}")
+    except Exception as e:
+        print(f"⚠ Fehler beim Logo-Download: {e}")
 
 def scrape_table(team):
     name = team["name"]
@@ -27,7 +42,7 @@ def scrape_table(team):
 
     table = soup.select_one("#team-fixture-league-tables table")
     if not table:
-        print(f"⚠️ Keine Tabelle gefunden für {name}")
+        print(f"⚠ Keine Tabelle gefunden für {name}")
         return
 
     rows = []
@@ -46,10 +61,14 @@ def scrape_table(team):
         else:
             logo_url = ""
 
-        # Mannschaftsname extrahieren
         club_name = normalize(tds[2].get_text(strip=True))
+        slug = slugify(club_name)
+        local_logo = f"logos/{slug}.png"
 
-        # Highlighting robust machen
+        # Logo lokal speichern
+        if logo_url and not os.path.exists(local_logo):
+            download_logo(logo_url, local_logo)
+
         highlight = "oftersheim" in club_name.lower()
 
         spiele = normalize(tds[3].get_text(strip=True))
@@ -61,7 +80,7 @@ def scrape_table(team):
 
         rows.append({
             "platz": platz,
-            "logo": logo_url,
+            "logo": local_logo,
             "name": club_name,
             "spiele": spiele,
             "g": g,
@@ -97,7 +116,7 @@ def scrape_table(team):
         table_html += f"""
     <tr{style}>
       <td>{r['platz']}</td>
-      <td><img src="{r['logo']}" alt="" style="height:24px;"></td>
+      <td><img src="../{r['logo']}" alt="" style="height:24px;"></td>
       <td>{r['name']}</td>
       <td>{r['spiele']}</td>
       <td>{r['g']}</td>
@@ -138,7 +157,7 @@ def scrape_table(team):
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_out)
 
-    print(f"✔️ HTML erzeugt: {output_path}")
+    print(f"✔ HTML erzeugt: {output_path}")
 
 
 for team in teams:
