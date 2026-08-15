@@ -27,7 +27,11 @@ def scrape_table(team):
 
     # ALLE Links entfernen (nur Text behalten)
     for a in table.find_all("a"):
-        a.unwrap()   # entfernt <a>, behält Inhalt
+        a.unwrap()
+
+    # ALLE Bilder entfernen
+    for img in table.find_all("img"):
+        img.decompose()
 
     # HTML-Seite erzeugen
     html_out = f"""
@@ -41,7 +45,6 @@ def scrape_table(team):
   table {{ border-collapse: collapse; width: 100%; }}
   th, td {{ border: 1px solid #ccc; padding: 6px; }}
   th {{ background: #eee; }}
-  img {{ height: 24px; vertical-align: middle; margin-right: 6px; }}
 </style>
 </head>
 <body>
