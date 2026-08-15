@@ -25,6 +25,10 @@ def scrape_table(team):
         print(f"⚠️ Keine Tabelle gefunden für {name}")
         return
 
+    # ALLE Links entfernen (nur Text behalten)
+    for a in table.find_all("a"):
+        a.unwrap()   # entfernt <a>, behält Inhalt
+
     # HTML-Seite erzeugen
     html_out = f"""
 <!DOCTYPE html>
