@@ -37,6 +37,29 @@ def extract_team_id(url):
     m = re.search(r"team-id/([A-Z0-9]+)", url)
     return m.group(1) if m else None
 
+def extract_score(info_td):
+    """Erkennt ALLE Ergebnisvarianten von fussball.de."""
+    if not info_td:
+        return ""
+
+    score = info_td.find("span", class_="score")
+    if score:
+        return score.get_text(strip=True)
+
+    result = info_td.find("span", class_="result")
+    if result:
+        return result.get_text(strip=True)
+
+    hidden = info_td.find("span", class_="hidden-small")
+    if hidden:
+        return hidden.get_text(strip=True)
+
+    info_text = info_td.find("span", class_="info-text")
+    if info_text:
+        return info_text.get_text(strip=True)
+
+    return info_td.get_text(strip=True)
+
 def load_games(url):
     """Parst die fussball.de AJAX-Spielpläne und gibt die ersten 2 echten Spiele zurück."""
     try:
@@ -49,7 +72,6 @@ def load_games(url):
 
         games = []
 
-        # Jede echte Spielzeile hat zwei column-club Zellen
         for tr in table.find_all("tr"):
             clubs = tr.find_all("td", class_="column-club")
             if len(clubs) == 2:
@@ -73,9 +95,9 @@ def load_games(url):
                 away_logo_tag = clubs[1].find("img")
                 away_logo = "https:" + away_logo_tag["src"] if away_logo_tag else ""
 
-                # Info (z. B. Absetzung)
+                # Ergebnis
                 info_td = tr.find("td", class_="column-score")
-                info = info_td.get_text(strip=True) if info_td else ""
+                info = extract_score(info_td)
 
                 games.append({
                     "date": date_text,
@@ -87,12 +109,10 @@ def load_games(url):
                     "info": info
                 })
 
-        # Nur die ersten 2 Spiele
         games = games[:2]
 
-        # HTML bauen
         out = "<table class='compact'><thead><tr>"
-        out += "<th>Datum</th><th>Heim</th><th></th><th>Auswärts</th><th>Info</th>"
+        out += "<th>Datum</th><th>Heim</th><th></th><th>Auswärts</th><th>Ergebnis</th>"
         out += "</tr></thead><tbody>"
 
         for g in games:
@@ -123,7 +143,6 @@ def scrape_table(team):
     html = requests.get(url).text
     soup = BeautifulSoup(html, "html.parser")
 
-    # Ligatabelle – Selector aktualisieren, falls fussball.de geändert wurde
     table = soup.select_one("#team-fixture-league-tables table")
     if not table:
         print(f"⚠ Keine Tabelle gefunden für {name}")
@@ -174,7 +193,6 @@ def scrape_table(team):
             "highlight": highlight
         })
 
-    # Spielpläne
     team_id = extract_team_id(url)
     next_url = f"https://www.fussball.de/ajax.team.next.games/-/mode/PAGE/team-id/{team_id}"
     prev_url = f"https://www.fussball.de/ajax.team.prev.games/-/mode/PAGE/team-id/{team_id}"
@@ -182,7 +200,6 @@ def scrape_table(team):
     next_games = load_games(next_url)
     prev_games = load_games(prev_url)
 
-    # Ligatabelle HTML
     table_html = """
 <table class="compact">
   <thead>
