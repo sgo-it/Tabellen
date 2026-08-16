@@ -12,19 +12,16 @@ os.makedirs("logos", exist_ok=True)
 teams = json.load(open("teams.json", encoding="utf-8"))
 
 def normalize(text):
-    """Entfernt Zero-Width-Chars, HTML-Entities, doppelte Leerzeichen."""
     text = text.replace("\u200b", "").replace("\u200c", "").replace("\u200d", "")
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 def slugify(name):
-    """Erzeugt Dateinamen für Logos."""
     name = name.lower()
     name = re.sub(r"[^a-z0-9]+", "-", name)
     return name.strip("-")
 
 def download_logo(url, filename):
-    """Logo lokal speichern."""
     try:
         r = requests.get(url, timeout=10)
         if r.status_code == 200:
@@ -37,12 +34,11 @@ def download_logo(url, filename):
         print(f"⚠ Fehler beim Logo-Download: {e}")
 
 def extract_team_id(url):
-    """Extrahiert die team-id aus der fussball.de URL."""
     m = re.search(r"team-id/([A-Z0-9]+)", url)
     return m.group(1) if m else None
 
 def load_games(url):
-    """Lädt HTML der Spiele (next/prev) und extrahiert die ersten 2 Zeilen."""
+    """Parst die fussball.de AJAX-Spielpläne und gibt die ersten 2 echten Spiele zurück."""
     try:
         html = requests.get(url, timeout=10).text
         soup = BeautifulSoup(html, "html.parser")
@@ -51,21 +47,67 @@ def load_games(url):
         if not table:
             return "<p>Keine Daten</p>"
 
-        rows = table.find_all("tr")[1:3]  # nur die ersten 2 Spiele
+        games = []
 
-        new_table = "<table class='compact'><thead><tr>"
-        for th in table.find_all("th"):
-            new_table += f"<th>{th.get_text(strip=True)}</th>"
-        new_table += "</tr></thead><tbody>"
+        # Jede echte Spielzeile hat zwei column-club Zellen
+        for tr in table.find_all("tr"):
+            clubs = tr.find_all("td", class_="column-club")
+            if len(clubs) == 2:
 
-        for tr in rows:
-            new_table += "<tr>"
-            for td in tr.find_all("td"):
-                new_table += f"<td>{td.get_text(strip=True)}</td>"
-            new_table += "</tr>"
+                # Datum/Uhrzeit aus vorheriger row-competition
+                date_row = tr.find_previous_sibling("tr", class_="row-competition")
+                if date_row:
+                    date_text = date_row.find("td", class_="column-date").get_text(strip=True)
+                    competition = date_row.find("td", class_="column-team").get_text(strip=True)
+                else:
+                    date_text = ""
+                    competition = ""
 
-        new_table += "</tbody></table>"
-        return new_table
+                # Heimteam
+                home_name = clubs[0].find("div", class_="club-name").get_text(strip=True)
+                home_logo_tag = clubs[0].find("img")
+                home_logo = "https:" + home_logo_tag["src"] if home_logo_tag else ""
+
+                # Auswärtsteam
+                away_name = clubs[1].find("div", class_="club-name").get_text(strip=True)
+                away_logo_tag = clubs[1].find("img")
+                away_logo = "https:" + away_logo_tag["src"] if away_logo_tag else ""
+
+                # Info (z. B. Absetzung)
+                info_td = tr.find("td", class_="column-score")
+                info = info_td.get_text(strip=True) if info_td else ""
+
+                games.append({
+                    "date": date_text,
+                    "competition": competition,
+                    "home": home_name,
+                    "home_logo": home_logo,
+                    "away": away_name,
+                    "away_logo": away_logo,
+                    "info": info
+                })
+
+        # Nur die ersten 2 Spiele
+        games = games[:2]
+
+        # HTML bauen
+        out = "<table class='compact'><thead><tr>"
+        out += "<th>Datum</th><th>Heim</th><th></th><th>Auswärts</th><th>Info</th>"
+        out += "</tr></thead><tbody>"
+
+        for g in games:
+            out += f"""
+            <tr>
+                <td>{g['date']}</td>
+                <td><img src="{g['home_logo']}" style="height:18px;"> {g['home']}</td>
+                <td>:</td>
+                <td><img src="{g['away_logo']}" style="height:18px;"> {g['away']}</td>
+                <td>{g['info']}</td>
+            </tr>
+            """
+
+        out += "</tbody></table>"
+        return out
 
     except Exception as e:
         print("⚠ Fehler beim Laden der Spiele:", e)
@@ -81,6 +123,7 @@ def scrape_table(team):
     html = requests.get(url).text
     soup = BeautifulSoup(html, "html.parser")
 
+    # Ligatabelle – Selector aktualisieren, falls fussball.de geändert wurde
     table = soup.select_one("#team-fixture-league-tables table")
     if not table:
         print(f"⚠ Keine Tabelle gefunden für {name}")
@@ -131,7 +174,7 @@ def scrape_table(team):
             "highlight": highlight
         })
 
-    # Spielpläne laden
+    # Spielpläne
     team_id = extract_team_id(url)
     next_url = f"https://www.fussball.de/ajax.team.next.games/-/mode/PAGE/team-id/{team_id}"
     prev_url = f"https://www.fussball.de/ajax.team.prev.games/-/mode/PAGE/team-id/{team_id}"
@@ -139,7 +182,7 @@ def scrape_table(team):
     next_games = load_games(next_url)
     prev_games = load_games(prev_url)
 
-    # Ligatabelle erzeugen
+    # Ligatabelle HTML
     table_html = """
 <table class="compact">
   <thead>
@@ -180,7 +223,6 @@ def scrape_table(team):
 </table>
 """
 
-    # HTML-Seite erzeugen
     html_out = f"""
 <!DOCTYPE html>
 <html lang="de">
@@ -241,6 +283,5 @@ def scrape_table(team):
     print(f"✔ HTML erzeugt: {output_path}")
 
 
-# Alle Teams scrapen
 for team in teams:
     scrape_table(team)
