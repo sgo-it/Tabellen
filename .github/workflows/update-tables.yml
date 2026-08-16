@@ -15,7 +15,15 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      # Repository Variables (steuerbar über GitHub → Settings → Variables)
       NUM_FUTURE_GAMES: ${{ vars.NUM_FUTURE_GAMES }}
+      SEND_EMAIL_ON_SUCCESS: ${{ vars.SEND_EMAIL_ON_SUCCESS }}
+      SEND_EMAIL_ON_ERROR: ${{ vars.SEND_EMAIL_ON_ERROR }}
+
+      # Secrets (SMTP / Graph API)
+      SMTP_CLIENT_ID: ${{ secrets.SMTP_CLIENT_ID }}
+      SMTP_CLIENT_SECRET: ${{ secrets.SMTP_CLIENT_SECRET }}
+      SMTP_TENANT_ID: ${{ secrets.SMTP_TENANT_ID }}
 
     steps:
       - name: Repository auschecken
@@ -27,7 +35,7 @@ jobs:
           python-version: "3.11"
 
       - name: Abhängigkeiten installieren
-        run: pip install beautifulsoup4 requests
+        run: pip install beautifulsoup4 requests msal
 
       - name: Tabellen aktualisieren
         run: python scraper.py
