@@ -38,10 +38,11 @@ def extract_team_id(url):
     return m.group(1) if m else None
 
 def extract_score(info_td):
-    """Erkennt ALLE Ergebnisvarianten von fussball.de."""
+    """Erkennt ALLE Ergebnisvarianten von fussball.de – inkl. Kombinationen wie '1:3 nV'."""
     if not info_td:
         return ""
 
+    # Ergebnis-Typen
     score = info_td.find("span", class_="score")
     if score:
         return score.get_text(strip=True)
@@ -54,10 +55,12 @@ def extract_score(info_td):
     if hidden:
         return hidden.get_text(strip=True)
 
-    info_text = info_td.find("span", class_="info-text")
-    if info_text:
-        return info_text.get_text(strip=True)
+    # WICHTIG: mehrere info-text Elemente → Ergebnis + Zusatzinfo
+    info_texts = info_td.find_all("span", class_="info-text")
+    if info_texts:
+        return " ".join([t.get_text(strip=True) for t in info_texts])
 
+    # Fallback
     return info_td.get_text(strip=True)
 
 def load_games(url):
