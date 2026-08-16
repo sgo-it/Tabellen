@@ -1,9 +1,9 @@
-import smtplib, base64
+import smtplib, base64, os
 from msal import ConfidentialClientApplication
 
-tenant_id = "<TENANT_ID>"
-client_id = "<CLIENT_ID>"
-client_secret = "<CLIENT_SECRET>"
+tenant_id = os.environ["TENANT_ID"]
+client_id = os.environ["CLIENT_ID"]
+client_secret = os.environ["CLIENT_SECRET"]
 smtp_user = "automation@sg-oftersheim.de"
 
 # Token holen
