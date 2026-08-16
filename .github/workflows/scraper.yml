@@ -1,0 +1,2 @@
+env:
+  NUM_FUTURE_GAMES: ${{ vars.NUM_FUTURE_GAMES }}
