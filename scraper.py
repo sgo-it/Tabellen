@@ -4,6 +4,9 @@ from bs4 import BeautifulSoup
 import os
 import re
 
+# Anzahl der zukünftigen Spiele über Secret steuerbar
+num_future_games = int(os.getenv("NUM_FUTURE_GAMES", 2))
+
 # Ordner anlegen
 os.makedirs("teams", exist_ok=True)
 os.makedirs("logos", exist_ok=True)
@@ -39,53 +42,10 @@ def extract_team_id(url):
 
 
 # ---------------------------------------------------------
-#   Ergebnis aus der Spiel-Detailseite extrahieren
-# ---------------------------------------------------------
-
-def extract_result_from_detail(url):
-    """Extrahiert das Ergebnis aus der Spiel-Detailseite (immer Klartext)."""
-    try:
-        html = requests.get(url, timeout=10).text
-        soup = BeautifulSoup(html, "html.parser")
-
-        selectors = [
-            ".match-score",
-            ".result",
-            ".score",
-            "span.match-score",
-            "div.match-score"
-        ]
-
-        for sel in selectors:
-            el = soup.select_one(sel)
-            if el:
-                return el.get_text(strip=True)
-
-        return ""
-    except Exception as e:
-        print("⚠ Fehler beim Laden der Detailseite:", e)
-        return ""
-
-
-def extract_score(info_td):
-    """Erkennt Ergebnis über Detailseite, da fussball.de es im HTML verschlüsselt."""
-    if not info_td:
-        return ""
-
-    a = info_td.find("a")
-    if not a or not a.get("href"):
-        return ""
-
-    detail_url = a["href"]
-    return extract_result_from_detail(detail_url)
-
-
-# ---------------------------------------------------------
-#   Spiele aus AJAX-HTML extrahieren
+#   NÄCHSTE SPIELE LADEN (OHNE ERGEBNIS)
 # ---------------------------------------------------------
 
 def load_games(url):
-    """Parst die fussball.de AJAX-Spielpläne und gibt die ersten 2 echten Spiele zurück."""
     try:
         html = requests.get(url, timeout=10).text
         soup = BeautifulSoup(html, "html.parser")
@@ -100,43 +60,33 @@ def load_games(url):
             clubs = tr.find_all("td", class_="column-club")
             if len(clubs) == 2:
 
-                # Datum/Uhrzeit aus vorheriger row-competition
                 date_row = tr.find_previous_sibling("tr", class_="row-competition")
                 if date_row:
                     date_text = date_row.find("td", class_="column-date").get_text(strip=True)
-                    competition = date_row.find("td", class_="column-team").get_text(strip=True)
                 else:
                     date_text = ""
-                    competition = ""
 
-                # Heimteam
                 home_name = clubs[0].find("div", class_="club-name").get_text(strip=True)
                 home_logo_tag = clubs[0].find("img")
                 home_logo = "https:" + home_logo_tag["src"] if home_logo_tag else ""
 
-                # Auswärtsteam
                 away_name = clubs[1].find("div", class_="club-name").get_text(strip=True)
                 away_logo_tag = clubs[1].find("img")
                 away_logo = "https:" + away_logo_tag["src"] if away_logo_tag else ""
 
-                # Ergebnis aus Detailseite
-                info_td = tr.find("td", class_="column-score")
-                info = extract_score(info_td)
-
                 games.append({
                     "date": date_text,
-                    "competition": competition,
                     "home": home_name,
                     "home_logo": home_logo,
                     "away": away_name,
                     "away_logo": away_logo,
-                    "info": info
                 })
 
-        games = games[:2]
+        # Anzahl der Spiele begrenzen
+        games = games[:num_future_games]
 
         out = "<table class='compact'><thead><tr>"
-        out += "<th>Datum</th><th>Heim</th><th></th><th>Auswärts</th><th>Ergebnis</th>"
+        out += "<th>Datum</th><th>Heim</th><th></th><th>Auswärts</th>"
         out += "</tr></thead><tbody>"
 
         for g in games:
@@ -146,7 +96,6 @@ def load_games(url):
                 <td><img src="{g['home_logo']}" style="height:18px;"> {g['home']}</td>
                 <td>:</td>
                 <td><img src="{g['away_logo']}" style="height:18px;"> {g['away']}</td>
-                <td>{g['info']}</td>
             </tr>
             """
 
@@ -159,7 +108,7 @@ def load_games(url):
 
 
 # ---------------------------------------------------------
-#   Ligatabelle extrahieren
+#   LIGATABELLE EXTRAHIEREN
 # ---------------------------------------------------------
 
 def scrape_table(team):
@@ -222,13 +171,12 @@ def scrape_table(team):
             "highlight": highlight
         })
 
+    # NUR NÄCHSTE SPIELE
     team_id = extract_team_id(url)
     next_url = f"https://www.fussball.de/ajax.team.next.games/-/mode/PAGE/team-id/{team_id}"
-    prev_url = f"https://www.fussball.de/ajax.team.prev.games/-/mode/PAGE/team-id/{team_id}"
-
     next_games = load_games(next_url)
-    prev_games = load_games(prev_url)
 
+    # HTML erzeugen
     table_html = """
 <table class="compact">
   <thead>
@@ -314,9 +262,6 @@ def scrape_table(team):
 
 <h2>Nächste Spiele</h2>
 {next_games}
-
-<h2>Letzte Spiele</h2>
-{prev_games}
 
 </body>
 </html>
