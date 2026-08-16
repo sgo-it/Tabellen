@@ -63,9 +63,12 @@ def load_games(url):
                 date_row = tr.find_previous_sibling("tr", class_="row-competition")
                 if date_row:
                     date_text = date_row.find("td", class_="column-date").get_text(strip=True)
-                    date_text = date_text.replace(" | ", " ")  # Uhrzeit ohne Trennzeichen
+
+                    # Trenner entfernen: alle Varianten von "|"
+                    date_text = date_text.replace("|", " ")
+                    date_text = re.sub(r"\s+", " ", date_text).strip()
                 else:
-                    date_text = ""
+                date_text = ""
 
                 home_name = clubs[0].find("div", class_="club-name").get_text(strip=True)
                 home_logo_tag = clubs[0].find("img")
