@@ -96,15 +96,15 @@ def load_games(url):
 
         for g in games:
 
-            # Highlight wenn Oftersheim beteiligt ist
-            highlight = "oftersheim" in g['home'].lower() or "oftersheim" in g['away'].lower()
-            row_style = ' style="background-color: #d8f5d0;"' if highlight else ""
+            # Zellen-Highlighting
+            home_highlight = ' style="background-color: #d8f5d0;"' if "oftersheim" in g['home'].lower() else ""
+            away_highlight = ' style="background-color: #d8f5d0;"' if "oftersheim" in g['away'].lower() else ""
 
             out += f"""
-            <tr{row_style}>
+            <tr>
                 <td>{g['date']}</td>
-                <td><img src="{g['home_logo']}" style="height:18px;"> {g['home']}</td>
-                <td><img src="{g['away_logo']}" style="height:18px;"> {g['away']}</td>
+                <td{home_highlight}><img src="{g['home_logo']}" style="height:18px;"> {g['home']}</td>
+                <td{away_highlight}><img src="{g['away_logo']}" style="height:18px;"> {g['away']}</td>
             </tr>
             """
 
