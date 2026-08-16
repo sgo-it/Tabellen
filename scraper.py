@@ -351,7 +351,7 @@ try:
     if send_success:
         send_mail(
             subject="Update Tabellen Mannschaften erfolgreich abgeschlossen",
-            body="Der Tabellen‑Scraper wurde erfolgreich ausgeführt und alle Mannschaften wurden aktualisiert."
+            body="Die Tabellen der Mannschaften wurden erfolgreich für alle Mannschaften wurden aktualisiert."
         )
 
 except Exception as e:
