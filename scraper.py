@@ -37,31 +37,52 @@ def extract_team_id(url):
     m = re.search(r"team-id/([A-Z0-9]+)", url)
     return m.group(1) if m else None
 
+
+# ---------------------------------------------------------
+#   Ergebnis aus der Spiel-Detailseite extrahieren
+# ---------------------------------------------------------
+
+def extract_result_from_detail(url):
+    """Extrahiert das Ergebnis aus der Spiel-Detailseite (immer Klartext)."""
+    try:
+        html = requests.get(url, timeout=10).text
+        soup = BeautifulSoup(html, "html.parser")
+
+        selectors = [
+            ".match-score",
+            ".result",
+            ".score",
+            "span.match-score",
+            "div.match-score"
+        ]
+
+        for sel in selectors:
+            el = soup.select_one(sel)
+            if el:
+                return el.get_text(strip=True)
+
+        return ""
+    except Exception as e:
+        print("⚠ Fehler beim Laden der Detailseite:", e)
+        return ""
+
+
 def extract_score(info_td):
-    """Erkennt ALLE Ergebnisvarianten von fussball.de – inkl. Kombinationen wie '1:3 nV'."""
+    """Erkennt Ergebnis über Detailseite, da fussball.de es im HTML verschlüsselt."""
     if not info_td:
         return ""
 
-    # Ergebnis-Typen
-    score = info_td.find("span", class_="score")
-    if score:
-        return score.get_text(strip=True)
+    a = info_td.find("a")
+    if not a or not a.get("href"):
+        return ""
 
-    result = info_td.find("span", class_="result")
-    if result:
-        return result.get_text(strip=True)
+    detail_url = a["href"]
+    return extract_result_from_detail(detail_url)
 
-    hidden = info_td.find("span", class_="hidden-small")
-    if hidden:
-        return hidden.get_text(strip=True)
 
-    # WICHTIG: mehrere info-text Elemente → Ergebnis + Zusatzinfo
-    info_texts = info_td.find_all("span", class_="info-text")
-    if info_texts:
-        return " ".join([t.get_text(strip=True) for t in info_texts])
-
-    # Fallback
-    return info_td.get_text(strip=True)
+# ---------------------------------------------------------
+#   Spiele aus AJAX-HTML extrahieren
+# ---------------------------------------------------------
 
 def load_games(url):
     """Parst die fussball.de AJAX-Spielpläne und gibt die ersten 2 echten Spiele zurück."""
@@ -98,7 +119,7 @@ def load_games(url):
                 away_logo_tag = clubs[1].find("img")
                 away_logo = "https:" + away_logo_tag["src"] if away_logo_tag else ""
 
-                # Ergebnis
+                # Ergebnis aus Detailseite
                 info_td = tr.find("td", class_="column-score")
                 info = extract_score(info_td)
 
@@ -135,6 +156,11 @@ def load_games(url):
     except Exception as e:
         print("⚠ Fehler beim Laden der Spiele:", e)
         return "<p>Fehler beim Laden</p>"
+
+
+# ---------------------------------------------------------
+#   Ligatabelle extrahieren
+# ---------------------------------------------------------
 
 def scrape_table(team):
     name = team["name"]
