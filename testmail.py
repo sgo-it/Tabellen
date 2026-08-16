@@ -2,12 +2,21 @@ import os
 import requests
 from msal import ConfidentialClientApplication
 
+# --- DEBUG: Zeige alle SMTP‑Variablen ---
+print("=== DEBUG: ENV Variablen ===")
+print("SMTP_CLIENT_ID:", os.environ.get("SMTP_CLIENT_ID"))
+print("SMTP_CLIENT_SECRET:", os.environ.get("SMTP_CLIENT_SECRET"))
+print("SMTP_TENANT_ID:", os.environ.get("SMTP_TENANT_ID"))
+print("============================\n")
+
+# --- Secrets laden ---
 tenant_id = os.environ["SMTP_TENANT_ID"]
 client_id = os.environ["SMTP_CLIENT_ID"]
 client_secret = os.environ["SMTP_CLIENT_SECRET"]
 
 sender = "automation@sg-oftersheim.de"  # Shared Mailbox
 
+# --- Token holen ---
 app = ConfidentialClientApplication(
     client_id,
     authority=f"https://login.microsoftonline.com/{tenant_id}",
@@ -24,6 +33,7 @@ if "access_token" not in result:
 
 access_token = result["access_token"]
 
+# --- Mail definieren ---
 mail = {
     "message": {
         "subject": "SGO Automation Test",
@@ -37,6 +47,7 @@ mail = {
     }
 }
 
+# --- Mail senden ---
 response = requests.post(
     f"https://graph.microsoft.com/v1.0/users/{sender}/sendMail",
     headers={"Authorization": f"Bearer {access_token}"},
