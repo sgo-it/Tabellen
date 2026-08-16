@@ -1,0 +1,24 @@
+name: Test SMTP OAuth Mail
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send-test-mail:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          pip install msal
+
+      - name: Run testmail.py
+        env:
+          TENANT_ID: ${{ secrets.SMTP_TENANT_ID }}
+          CLIENT_ID: ${{ secrets.SMTP_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.SMTP_CLIENT_SECRET }}
+        run: |
+          python3 testmail.py
