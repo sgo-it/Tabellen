@@ -2,9 +2,9 @@ import os
 import requests
 from msal import ConfidentialClientApplication
 
-tenant_id = os.environ["TENANT_ID"]
-client_id = os.environ["CLIENT_ID"]
-client_secret = os.environ["CLIENT_SECRET"]
+tenant_id = os.environ["SMTP_TENANT_ID"]
+client_id = os.environ["SMTP_CLIENT_ID"]
+client_secret = os.environ["SMTP_CLIENT_SECRET"]
 
 sender = "automation@sg-oftersheim.de"  # Shared Mailbox
 
