@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import os
 import re
 
-# Anzahl der zukünftigen Spiele über Secret steuerbar 
+# Anzahl der zukünftigen Spiele über GitHub Variable steuerbar
 num_future_games = int(os.getenv("NUM_FUTURE_GAMES", 2))
 
 # Ordner anlegen
@@ -42,7 +42,7 @@ def extract_team_id(url):
 
 
 # ---------------------------------------------------------
-#   NÄCHSTE SPIELE LADEN (OHNE ERGEBNIS)
+#   NÄCHSTE SPIELE LADEN (Datum + Uhrzeit, Heim, Gast)
 # ---------------------------------------------------------
 
 def load_games(url):
@@ -63,6 +63,7 @@ def load_games(url):
                 date_row = tr.find_previous_sibling("tr", class_="row-competition")
                 if date_row:
                     date_text = date_row.find("td", class_="column-date").get_text(strip=True)
+                    date_text = date_text.replace(" | ", " ")  # Uhrzeit ohne Trennzeichen
                 else:
                     date_text = ""
 
@@ -86,7 +87,7 @@ def load_games(url):
         games = games[:num_future_games]
 
         out = "<table class='compact'><thead><tr>"
-        out += "<th>Datum</th><th>Heim</th><th></th><th>Auswärts</th>"
+        out += "<th>Datum</th><th>Heim</th><th>Gast</th>"
         out += "</tr></thead><tbody>"
 
         for g in games:
@@ -94,7 +95,6 @@ def load_games(url):
             <tr>
                 <td>{g['date']}</td>
                 <td><img src="{g['home_logo']}" style="height:18px;"> {g['home']}</td>
-                <td>:</td>
                 <td><img src="{g['away_logo']}" style="height:18px;"> {g['away']}</td>
             </tr>
             """
