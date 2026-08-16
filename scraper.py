@@ -3,15 +3,78 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import re
+from msal import ConfidentialClientApplication
 
-# Anzahl der zukünftigen Spiele über GitHub Variable steuerbar
+# ---------------------------------------------------------
+#   MAIL-FUNKTION (Graph API)
+# ---------------------------------------------------------
+
+def send_mail(subject, body):
+    try:
+        tenant_id = os.environ["SMTP_TENANT_ID"]
+        client_id = os.environ["SMTP_CLIENT_ID"]
+        client_secret = os.environ["SMTP_CLIENT_SECRET"]
+        sender = "automation@sg-oftersheim.de"
+
+        app = ConfidentialClientApplication(
+            client_id,
+            authority=f"https://login.microsoftonline.com/{tenant_id}",
+            client_credential=client_secret
+        )
+
+        result = app.acquire_token_for_client(
+            scopes=["https://graph.microsoft.com/.default"]
+        )
+
+        if "access_token" not in result:
+            print("⚠ Mail: Kein Token erhalten")
+            return False
+
+        access_token = result["access_token"]
+
+        mail = {
+            "message": {
+                "subject": subject,
+                "body": {
+                    "contentType": "Text",
+                    "content": body
+                },
+                "toRecipients": [
+                    {"emailAddress": {"address": "it@sg-oftersheim.de"}}
+                ]
+            }
+        }
+
+        response = requests.post(
+            f"https://graph.microsoft.com/v1.0/users/{sender}/sendMail",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json=mail
+        )
+
+        print("Mail Status:", response.status_code)
+        return response.status_code == 202
+
+    except Exception as e:
+        print("⚠ Mail Fehler:", e)
+        return False
+
+
+# ---------------------------------------------------------
+#   STEUER-VARIABLEN (Default = false)
+# ---------------------------------------------------------
+
+send_success = os.getenv("SEND_EMAIL_ON_SUCCESS", "false").lower() == "true"
+send_error = os.getenv("SEND_EMAIL_ON_ERROR", "false").lower() == "true"
+
 num_future_games = int(os.getenv("NUM_FUTURE_GAMES", 2))
 
-# Ordner anlegen
+# ---------------------------------------------------------
+#   ORDNER & TEAMS LADEN
+# ---------------------------------------------------------
+
 os.makedirs("teams", exist_ok=True)
 os.makedirs("logos", exist_ok=True)
 
-# Teams laden
 teams = json.load(open("teams.json", encoding="utf-8"))
 
 def normalize(text):
@@ -42,7 +105,7 @@ def extract_team_id(url):
 
 
 # ---------------------------------------------------------
-#   NÄCHSTE SPIELE LADEN (Datum + Uhrzeit, Heim, Gast)
+#   NÄCHSTE SPIELE LADEN
 # ---------------------------------------------------------
 
 def load_games(url):
@@ -63,11 +126,8 @@ def load_games(url):
                 date_row = tr.find_previous_sibling("tr", class_="row-competition")
                 if date_row:
                     date_text = date_row.find("td", class_="column-date").get_text(strip=True)
-
-                    # Entferne ALLE Varianten von "|"
                     date_text = date_text.replace("|", " ")
                     date_text = re.sub(r"\s+", " ", date_text).strip()
-
                 else:
                     date_text = ""
 
@@ -87,7 +147,6 @@ def load_games(url):
                     "away_logo": away_logo,
                 })
 
-        # Anzahl der Spiele begrenzen
         games = games[:num_future_games]
 
         out = "<table class='compact'><thead><tr>"
@@ -95,8 +154,6 @@ def load_games(url):
         out += "</tr></thead><tbody>"
 
         for g in games:
-
-            # Zellen-Highlighting
             home_highlight = ' style="background-color: #d8f5d0;"' if "oftersheim" in g['home'].lower() else ""
             away_highlight = ' style="background-color: #d8f5d0;"' if "oftersheim" in g['away'].lower() else ""
 
@@ -180,12 +237,10 @@ def scrape_table(team):
             "highlight": highlight
         })
 
-    # NUR NÄCHSTE SPIELE
     team_id = extract_team_id(url)
     next_url = f"https://www.fussball.de/ajax.team.next.games/-/mode/PAGE/team-id/{team_id}"
     next_games = load_games(next_url)
 
-    # HTML erzeugen
     table_html = """
 <table class="compact">
   <thead>
@@ -283,5 +338,29 @@ def scrape_table(team):
     print(f"✔ HTML erzeugt: {output_path}")
 
 
-for team in teams:
-    scrape_table(team)
+# ---------------------------------------------------------
+#   HAUPTABLAUF MIT MAIL-STEUERUNG
+# ---------------------------------------------------------
+
+try:
+    for team in teams:
+        scrape_table(team)
+
+    print("✔ Update Tabellen Mannschaften erfolgreich abgeschlossen")
+
+    if send_success:
+        send_mail(
+            subject="Update Tabellen Mannschaften erfolgreich abgeschlossen",
+            body="Der Tabellen‑Scraper wurde erfolgreich ausgeführt und alle Mannschaften wurden aktualisiert."
+        )
+
+except Exception as e:
+    print("⚠ Fehler beim Update Tabellen Mannschaften:", e)
+
+    if send_error:
+        send_mail(
+            subject="Fehler beim Update Tabellen Mannschaften",
+            body=f"Beim Ausführen des Tabellen‑Scrapers ist ein Fehler aufgetreten:\n\n{e}"
+        )
+
+    raise
