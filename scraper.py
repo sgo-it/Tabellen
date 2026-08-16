@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import os
 import re
 
-# Anzahl der zukünftigen Spiele über Secret steuerbar
+# Anzahl der zukünftigen Spiele über Secret steuerbar 
 num_future_games = int(os.getenv("NUM_FUTURE_GAMES", 2))
 
 # Ordner anlegen
