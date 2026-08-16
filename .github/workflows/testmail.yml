@@ -7,18 +7,21 @@ jobs:
   send-test-mail:
     runs-on: ubuntu-latest
 
+    env:
+      SMTP_TENANT_ID: ${{ secrets.SMTP_TENANT_ID }}
+      SMTP_CLIENT_ID: ${{ secrets.SMTP_CLIENT_ID }}
+      SMTP_CLIENT_SECRET: ${{ secrets.SMTP_CLIENT_SECRET }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
-          pip install msal
+          pip install msal requests
+
+      - name: Debug SMTP vars
+        run: env | grep SMTP
 
       - name: Run testmail.py
-        env:
-          TENANT_ID: ${{ secrets.SMTP_TENANT_ID }}
-          CLIENT_ID: ${{ secrets.SMTP_CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.SMTP_CLIENT_SECRET }}
-        run: |
-          python3 testmail.py
+        run: python3 testmail.py
