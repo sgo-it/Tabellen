@@ -288,35 +288,36 @@ def scrape_table(team):
 <meta charset="UTF-8">
 <title>{titel}</title>
 <style>
-  body {{
+  body {
     font-family: Arial;
     padding: 20px;
-  }}
+  }
 
-  table.compact {{
+  table.compact {
     border-collapse: collapse;
-    width: 600px;
-    font-size: 13px;
+    width: 750px;        /* vorher 600px */
+    font-size: 16px;     /* vorher 13px */
     white-space: nowrap;
-  }}
+  }
 
-  th, td {{
+  th, td {
     border: 1px solid #ccc;
-    padding: 3px 6px;
-  }}
+    padding: 4px 8px;    /* vorher 3px 6px */
+  }
 
-  th {{
+  th {
     background: #eee;
-  }}
+  }
 
-  img {{
-    height: 18px;
-  }}
+  img {
+    height: 22px;        /* vorher 18px */
+  }
 
-  h2 {{
+  h2 {
     margin-top: 30px;
-  }}
+  }
 </style>
+
 </head>
 <body>
 <h1>{titel}</h1>
