@@ -160,8 +160,8 @@ def load_games(url):
             out += f"""
             <tr>
                 <td>{g['date']}</td>
-                <td{home_highlight}><img src="{g['home_logo']}" style="height:18px;"> {g['home']}</td>
-                <td{away_highlight}><img src="{g['away_logo']}" style="height:18px;"> {g['away']}</td>
+                <td{home_highlight}><img src="{g['home_logo']}" style="height:22px;"> {g['home']}</td>
+                <td{away_highlight}><img src="{g['away_logo']}" style="height:22px;"> {g['away']}</td>
             </tr>
             """
 
@@ -265,7 +265,7 @@ def scrape_table(team):
         table_html += f"""
     <tr{style}>
       <td>{r['platz']}</td>
-      <td><img src="../{r['logo']}" alt="" style="height:18px;"></td>
+      <td><img src="../{r['logo']}" alt="" style="height:22px;"></td>
       <td>{r['name']}</td>
       <td>{r['spiele']}</td>
       <td>{r['g']}</td>
@@ -288,36 +288,35 @@ def scrape_table(team):
 <meta charset="UTF-8">
 <title>{titel}</title>
 <style>
-  body {
+  body {{
     font-family: Arial;
     padding: 20px;
-  }
+  }}
 
-  table.compact {
+  table.compact {{
     border-collapse: collapse;
-    width: 750px;        /* vorher 600px */
-    font-size: 16px;     /* vorher 13px */
+    width: 750px;
+    font-size: 16px;
     white-space: nowrap;
-  }
+  }}
 
-  th, td {
+  th, td {{
     border: 1px solid #ccc;
-    padding: 4px 8px;    /* vorher 3px 6px */
-  }
+    padding: 4px 8px;
+  }}
 
-  th {
+  th {{
     background: #eee;
-  }
+  }}
 
-  img {
-    height: 22px;        /* vorher 18px */
-  }
+  img {{
+    height: 22px;
+  }}
 
-  h2 {
+  h2 {{
     margin-top: 30px;
-  }
+  }}
 </style>
-
 </head>
 <body>
 <h1>{titel}</h1>
@@ -352,7 +351,7 @@ try:
     if send_success:
         send_mail(
             subject="Update Tabellen Mannschaften erfolgreich abgeschlossen",
-            body="Die Tabellen der Mannschaften wurden erfolgreich für alle Mannschaften wurden aktualisiert."
+            body="Der Tabellen‑Scraper wurde erfolgreich ausgeführt und alle Mannschaften wurden aktualisiert."
         )
 
 except Exception as e:
