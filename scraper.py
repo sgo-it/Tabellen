@@ -160,8 +160,8 @@ def load_games(url):
             out += f"""
             <tr>
                 <td>{g['date']}</td>
-                <td{home_highlight}><img src="{g['home_logo']}" style="height:22px;"> {g['home']}</td>
-                <td{away_highlight}><img src="{g['away_logo']}" style="height:22px;"> {g['away']}</td>
+                <td{home_highlight}><img src="{g['home_logo']}" style="height:25px;"> {g['home']}</td>
+                <td{away_highlight}><img src="{g['away_logo']}" style="height:25px;"> {g['away']}</td>
             </tr>
             """
 
@@ -265,7 +265,7 @@ def scrape_table(team):
         table_html += f"""
     <tr{style}>
       <td>{r['platz']}</td>
-      <td><img src="../{r['logo']}" alt="" style="height:22px;"></td>
+      <td><img src="../{r['logo']}" alt="" style="height:25px;"></td>
       <td>{r['name']}</td>
       <td>{r['spiele']}</td>
       <td>{r['g']}</td>
@@ -295,14 +295,14 @@ def scrape_table(team):
 
   table.compact {{
     border-collapse: collapse;
-    width: 750px;
-    font-size: 16px;
+    width: 860px;        /* vorher 750px */
+    font-size: 18px;     /* vorher 16px */
     white-space: nowrap;
   }}
 
   th, td {{
     border: 1px solid #ccc;
-    padding: 4px 8px;
+    padding: 5px 9px;    /* vorher 4px 8px */
   }}
 
   th {{
@@ -310,7 +310,7 @@ def scrape_table(team):
   }}
 
   img {{
-    height: 22px;
+    height: 25px;        /* vorher 22px */
   }}
 
   h2 {{
